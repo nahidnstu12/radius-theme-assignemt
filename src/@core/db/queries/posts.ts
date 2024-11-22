@@ -1,23 +1,26 @@
+import { LINK_LOGIN } from "@/@core/helpers/apiLinks";
+import { USER_ROLE } from "@/@core/helpers/enum";
 import { verifyAuth } from "@/@core/lib/auth";
-import { db } from "@/db";
 import { Post } from "@prisma/client";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { db } from "..";
+import { PostWithUser } from "@/@core/helpers/types";
 
-export async function fetchPosts(): Promise<Post[]> {
+export async function fetchPosts(): Promise<PostWithUser[]> {
   const token = cookies().get("token")?.value;
   if (!token) {
-    redirect("/login");
+    redirect(LINK_LOGIN);
   }
 
   const user = await verifyAuth(token);
   if (!user) {
-    redirect("/login");
+    redirect(LINK_LOGIN);
   }
 
   try {
     const posts =
-      user.role === "ADMIN"
+      user.role === USER_ROLE.ADMIN
         ? await db.post.findMany({
             orderBy: {
               updatedAt: "desc",
@@ -26,6 +29,7 @@ export async function fetchPosts(): Promise<Post[]> {
               user: {
                 select: {
                   email: true,
+                  name: true,
                 },
               },
             },
@@ -41,6 +45,7 @@ export async function fetchPosts(): Promise<Post[]> {
               user: {
                 select: {
                   email: true,
+                  name: true,
                 },
               },
             },

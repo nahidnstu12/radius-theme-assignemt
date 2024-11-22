@@ -1,3 +1,4 @@
+import NoDataFoundComponent from "@/@core/components/NoDataFoundComponent";
 import { fetchPosts } from "@/@core/db/queries/posts";
 
 export default async function Home() {
@@ -10,27 +11,37 @@ export default async function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-start p-24">
-      <div className="mb-4"></div>
-      <div className="mb-32 grid gap-x-8 gap-y-4 text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        {posts.map((post) => {
-          return (
-            <div key={post.id}>
-              <div className="mb-4">
-                <h2 className={`mb-3 text-2xl font-semibold`}>{post.title}</h2>
-
-                <p className={`m-0 max-w-[30ch] text-sm opacity-60`}>
-                  {post.content}
+    <div className="max-w-screen-xl mx-auto p-16">
+      {posts?.length == 0 ? (
+        <NoDataFoundComponent />
+      ) : (
+        <div className="sm:grid lg:grid-cols-3 sm:grid-cols-2 gap-10">
+          {posts?.map((post) => (
+            <div
+              className="hover:bg-gray-700 hover:text-white transition duration-300 max-w-sm rounded overflow-hidden shadow-lg"
+              key={post.id}
+            >
+              <div className="py-4 px-8">
+                <h4 className="text-lg mb-3 font-semibold">{post?.title}</h4>
+                <p className="mb-2 text-sm text-gray-600">
+                  {post?.content.length > 100
+                    ? post?.content.substring(0, 100) + "..."
+                    : post?.content}
                 </p>
-              </div>
-              <div className="text-sm opacity-30">
-                {"Updated at " +
-                  post.updatedAt.toLocaleDateString("en-US", dateOptions)}
+                {post?.imagePath && (
+                  <img src={post?.imagePath} className="w-100" />
+                )}
+                <hr className="mt-4" />
+                <span className="text-xs block">{post?.user?.name}</span>
+                <span className="text-xs">
+                  {"Updated at " +
+                    post.updatedAt.toLocaleDateString("en-US", dateOptions)}
+                </span>
               </div>
             </div>
-          );
-        })}
-      </div>
-    </main>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

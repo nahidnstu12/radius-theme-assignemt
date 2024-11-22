@@ -1,142 +1,70 @@
-'use server'
+"use server";
 
-import { db } from '@/db'
-import type { Post } from '@prisma/client'
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { z } from 'zod'
+import { LINK_LOGIN, LINK_USER_POST } from "@/@core/helpers/apiLinks";
+import { verifyAuth } from "@/@core/lib/auth";
+import { uploadNewFile } from "@/@core/lib/uploadImage";
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { db } from "../index";
 
 const postSchema = z.object({
-    title: z.string().min(3).max(255),
-    content: z.string().min(10).max(4000),
-})
+  title: z.string().min(1),
+  content: z.string().min(1),
+  location: z.string().min(1),
+  image: z.instanceof(File).optional(),
+});
 
-interface PostFormState {
-    errors: {
-        title?: string[],
-        content?: string[],
-        _form?: string[],
+export async function createPost(formState: any, formData: FormData) {
+  const token = cookies().get("token")?.value;
+  if (!token) redirect(LINK_LOGIN);
+
+  const user = await verifyAuth(token);
+  if (!user) redirect(LINK_LOGIN);
+
+  const imageFile = formData.get("image") as File;
+  let imagePath = "";
+
+  if (imageFile?.size > 0) {
+    imagePath = await uploadNewFile(imageFile, String(user.userId));
+  }
+
+  const result = postSchema.safeParse({
+    title: formData.get("title"),
+    content: formData.get("content"),
+    location: formData.get("location"),
+    image: imageFile,
+  });
+
+  if (!result.success) {
+    return {
+      errors: result.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const post = await db.post.create({
+      data: {
+        title: result.data.title,
+        content: result.data.content,
+        userId: String(user.userId),
+        location: result.data.location,
+        imagePath: imagePath,
+      },
+    });
+
+    if (post) {
+      revalidatePath(LINK_USER_POST);
+    //   redirect(LINK_USER_POST);
+      return { message: "Post created Successfully!" };
     }
-}
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log({ errors: { _form: [error.message] } });
 
-export async function createPost(
-    formState: PostFormState,
-    formData: FormData
-): Promise<PostFormState> {
-    const result = postSchema.safeParse({
-        title: formData.get('title'),
-        content: formData.get('content'),
-    })
-
-    if (!result.success) {
-        return {
-            errors: result.error.flatten().fieldErrors
-        }
+      return { errors: { _form: [error.message] } };
     }
-
-    let post: Post
-    try {
-        post = await db.post.create({
-          data: {
-            title: result.data.title,
-            content: result.data.content,
-            userId: "cm3nl78wq0001ljtzspdr1bef",
-            location: "noakhali",
-            imagePath: "image-path",
-          },
-        });
-    } catch (error: unknown) {
-        if (error instanceof Error) {
-            return {
-                errors: {
-                    _form: [error.message],
-                },
-            }
-        }
-        else {
-            return {
-                errors: {
-                    _form: ['Something went wrong'],
-                },
-            }
-        }
-    }
-
-    revalidatePath('/protected/posts')
-    redirect('/portected/posts')
-}
-
-export async function updatePost(
-    id: string,
-    formState: PostFormState,
-    formData: FormData
-): Promise<PostFormState> {
-    const result = postSchema.safeParse({
-        title: formData.get('title'),
-        content: formData.get('content'),
-    })
-
-    if (!result.success) {
-        return {
-            errors: result.error.flatten().fieldErrors
-        }
-    }
-
-    let post: Post
-    try {
-        post = await db.post.update({
-            where: { id },
-            data: {
-                title: result.data.title,
-                content: result.data.content,
-            }
-        })
-    } catch (error: unknown) {
-        if (error instanceof Error) {
-            return {
-                errors: {
-                    _form: [error.message],
-                },
-            }
-        }
-        else {
-            return {
-                errors: {
-                    _form: ['Something went wrong'],
-                },
-            }
-        }
-    }
-
-    revalidatePath('/')
-    redirect('/')
-}
-
-export async function deletePost(
-    id: string,
-): Promise<PostFormState> {
-    let post: Post
-    try {
-        post = await db.post.delete({
-            where: { id },
-        })
-    } catch (error: unknown) {
-        if (error instanceof Error) {
-            return {
-                errors: {
-                    _form: [error.message],
-                },
-            }
-        }
-        else {
-            return {
-                errors: {
-                    _form: ['Something went wrong'],
-                },
-            }
-        }
-    }
-
-    revalidatePath('/')
-    redirect('/')
+    return { errors: { _form: ["Something went wrong"] } };
+  }
 }
