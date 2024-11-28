@@ -8,7 +8,7 @@ import { db } from "..";
 import { PostWithUser } from "@/@core/helpers/types";
 
 export async function fetchPosts(): Promise<PostWithUser[]> {
-  const token = cookies().get("token")?.value;
+  const token = (await cookies()).get("token")?.value;
   if (!token) {
     redirect(LINK_LOGIN);
   }

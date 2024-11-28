@@ -1,6 +1,5 @@
 "use client";
 
-import { showToast } from "@/@core/components/ToastComponent";
 import {
   API_LOGIN,
   LINK_ADMIN_POST,
@@ -39,12 +38,12 @@ export default function Login() {
       }
 
       // Show success toast and refresh
-      showToast("success", result?.message);
+      alert(result?.message);
       router.refresh();
     } catch (err: any) {
       // Handle client-side errors or server-side error messages
       console.error("Login Error:", err);
-      showToast("error", err?.message || "An unexpected error occurred.");
+      alert(err?.message || "An unexpected error occurred.");
     }
   }
 
