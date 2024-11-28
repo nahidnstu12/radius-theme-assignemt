@@ -17,7 +17,7 @@ const postSchema = z.object({
 });
 
 export async function createPost(formState: any, formData: FormData) {
-  const token = cookies().get("token")?.value;
+  const token = (await cookies()).get("token")?.value;
   if (!token) redirect(LINK_LOGIN);
 
   const user = await verifyAuth(token);

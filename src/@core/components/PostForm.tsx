@@ -1,14 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
-import { useFormState } from "react-dom";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { LINK_USER_POST } from "../helpers/apiLinks";
 import FileUploadComponent from "./FileUploadComponent";
 import SubmitButton from "./SubmitButton";
 import TextareaInput from "./TextareaInput";
 import TextInput from "./TextInput";
-import { showToast } from "./ToastComponent";
 
 interface FormErrors {
   title?: string[];
@@ -26,11 +24,11 @@ interface PostFormProps {
   };
 }
 
-export default function PostForm({ formAction}: PostFormProps) {
+export default function PostForm({ formAction }: PostFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [submitted, setSubmitted] = useState(false);
-  const [formState, action] = useFormState<{
+  const [formState, action] = useActionState<{
     errors: FormErrors;
     message: string;
   }>(formAction, {
@@ -41,7 +39,8 @@ export default function PostForm({ formAction}: PostFormProps) {
   useEffect(() => {
     if (formState?.message) {
       startTransition(() => {
-        showToast("success", formState?.message);
+        // showToast("success", formState?.message);
+        alert(formState?.message);
         router.refresh();
         router.push(LINK_USER_POST);
       });
